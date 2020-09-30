@@ -3,6 +3,7 @@ package multipart
 import (
 	"mime/multipart"
 	"path/filepath"
+	"net/textproto"
 	"io"
 	"fmt"
 )
@@ -56,7 +57,8 @@ func Generate(body io.Writer, boundary string, params <-chan *Param) (contentTyp
 		if param.Reader == nil {
 			w.WriteField(param.Key, fmt.Sprintf("%v", param.Value))
 		} else {
-			part, e := w.CreateFormFile(param.Key, filepath.Base(fmt.Sprintf("%v", param.Value)))
+			// part, e := w.CreateFormFile(param.Key, filepath.Base(fmt.Sprintf("%v", param.Value)))
+			part, e := createFormFile(w, param)
 			if e != nil {
 				err = e
 				return
@@ -73,4 +75,20 @@ EXIT:
 	}
 	contentType = w.FormDataContentType()
 	return
+}
+
+func createFormFile(w *multipart.Writer, param *Param) (io.Writer, error) {
+	fileName := filepath.Base(fmt.Sprintf("%v", param.Value))
+	part, err := w.CreatePart(textproto.MIMEHeader{
+		"Content-Disposition": []string{fmt.Sprintf(`form-data; name="%s"; filename="%s"`, param.Key, fileName)},
+		"Content-Type": []string{FileContentType(fileName)},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = io.Copy(part, param.Reader); err != nil {
+		return nil, err
+	}
+	return part, nil
 }

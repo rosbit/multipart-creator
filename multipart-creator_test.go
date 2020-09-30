@@ -11,7 +11,7 @@ var (
 	params = []Param{
 		Param{"name", "rosbit", nil},
 		Param{"age", 10, nil},
-		Param{"file", "this/is/filename", bytes.NewBuffer([]byte("the content of filename"))},
+		Param{"file", "this/is/filename.png", bytes.NewBuffer([]byte("the content of filename"))},
 	}
 )
 
