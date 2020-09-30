@@ -57,13 +57,7 @@ func Generate(body io.Writer, boundary string, params <-chan *Param) (contentTyp
 		if param.Reader == nil {
 			w.WriteField(param.Key, fmt.Sprintf("%v", param.Value))
 		} else {
-			// part, e := w.CreateFormFile(param.Key, filepath.Base(fmt.Sprintf("%v", param.Value)))
-			part, e := createFormFile(w, param)
-			if e != nil {
-				err = e
-				return
-			}
-			if _, err = io.Copy(part, param.Reader); err != nil {
+			if _, err = createFormFile(w, param); err != nil {
 				return
 			}
 		}
