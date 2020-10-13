@@ -54,12 +54,8 @@ func Generate(body io.Writer, boundary string, params <-chan *Param) (contentTyp
 		if param == nil {
 			continue
 		}
-		if param.Reader == nil {
-			w.WriteField(param.Key, fmt.Sprintf("%v", param.Value))
-		} else {
-			if _, err = createFormFile(w, param); err != nil {
-				return
-			}
+		if err = param.createPart(w); err != nil {
+			return
 		}
 	}
 
@@ -71,18 +67,24 @@ EXIT:
 	return
 }
 
-func createFormFile(w *multipart.Writer, param *Param) (io.Writer, error) {
+func (param *Param) createPart(w *multipart.Writer) error {
+	if param.Reader == nil {
+		w.WriteField(param.Key, fmt.Sprintf("%v", param.Value))
+		return nil
+	}
+	return param.createFormFile(w)
+}
+
+func (param *Param) createFormFile(w *multipart.Writer) error {
 	fileName := filepath.Base(fmt.Sprintf("%v", param.Value))
 	part, err := w.CreatePart(textproto.MIMEHeader{
 		"Content-Disposition": []string{fmt.Sprintf(`form-data; name="%s"; filename="%s"`, param.Key, fileName)},
 		"Content-Type": []string{FileContentType(fileName)},
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if _, err = io.Copy(part, param.Reader); err != nil {
-		return nil, err
-	}
-	return part, nil
+	_, err = io.Copy(part, param.Reader)
+	return err
 }
