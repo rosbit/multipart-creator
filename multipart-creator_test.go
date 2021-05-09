@@ -40,3 +40,19 @@ func Test_2_with_given_boundary(t *testing.T) {
 	fmt.Printf("//////////////////////////////////////////////////////\n")
 	fmt.Printf("Content-Type: %s\n\n\n", contentType)
 }
+
+func Test_3_with_options(t *testing.T) {
+	fmt.Printf("////////////////////////////////////////////////////////\n")
+	fmt.Printf("///// BEGIN to create multipart with options       /////\n")
+	contentType, err := CreateMultiPart(os.Stdout, "-----this is my new boundary -----",
+		KeyVal("str-key", "string value"),
+		KeyVal("int-key", 10),
+		Reader("file", "file/name", bytes.NewBuffer([]byte("a new content of filename with options"))),
+	)
+	if err != nil {
+		t.Fatalf("failed to create multipart: %v\n", err)
+	}
+	fmt.Printf("///// END to create multipart with options        /////\n")
+	fmt.Printf("///////////////////////////////////////////////////////\n")
+	fmt.Printf("Content-Type: %s\n\n\n", contentType)
+}

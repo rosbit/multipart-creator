@@ -13,9 +13,11 @@ import (
 	"github.com/rosbit/multipart-creator"
 	"fmt"
 	"os"
+	"bytes"
 )
 
 func main() {
+	// sample 1:
 	params := []multipart.Param{
 		multipart.Param{"name", "rosbit", nil},
 		multipart.Param{"age", 10, nil},
@@ -23,6 +25,15 @@ func main() {
 	}
 
 	contentType, err := multipart.Create(os.Stdout, "", params)
+
+	// sample 2:
+	contentType, err := multipart.CreateMultiPart(os.Stdout, "-- this is my boundary --",
+		multipart.KeyVal("name", "rosbit"),
+		multipart.KeyVal("age", 10),
+		multipart.Reader("file", "file/name", bytes.NewBuffer([]byte("the content of optional file name"))),
+	)
+
+	// output result
 	if err != nil {
 		fmt.Printf("failed to create multipart: %v\n", err)
 		return

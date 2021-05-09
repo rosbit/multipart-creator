@@ -14,13 +14,53 @@ type Param struct {
 	Reader io.Reader
 }
 
+type p func()*Param
+
+func KeyVal(key string, val interface{}) p {
+	return func() *Param {
+		return &Param{
+			Key: key,
+			Value: val,
+		}
+	}
+}
+
+func Reader(key string, path string, reader io.Reader) p {
+	return func() *Param {
+		return &Param{
+			Key: key,
+			Value: path,
+			Reader: reader,
+		}
+	}
+}
+
+// create muiltpart body with/without boundary with optional params
+//  - body      the writer to store the multipart result
+//  - boundary  if empty, a random boundary will be generated
+//  - params    optinal fields to be included in the multipart result
+func CreateMultiPart(body io.Writer, boundary string, params ...p) (contentType string, err error) {
+	if len(params) == 0 {
+		return generate(body, boundary, nil)
+	}
+
+	c := make(chan *Param)
+	go func() {
+		for _, p := range params {
+			c <- p()
+		}
+		close(c)
+	}()
+	return generate(body, boundary, c)
+}
+
 // create multipart body with/without boundary
 //  - body      the writer to store the multipart result
 //  - boundary  if empty, a random boundary will be generated
 //  - params    fields to be included in the multipart result
 func Create(body io.Writer, boundary string, params []Param) (contentType string, err error) {
 	if len(params) == 0 {
-		return Generate(body, boundary, nil)
+		return generate(body, boundary, nil)
 	}
 
 	c := make(chan *Param)
@@ -30,14 +70,14 @@ func Create(body io.Writer, boundary string, params []Param) (contentType string
 		}
 		close(c)
 	}()
-	return Generate(body, boundary, c)
+	return generate(body, boundary, c)
 }
 
 // create multipart body with/without boundary
 //  - body      the writer to store the multipart result
 //  - boundary  if empty, a random boundary will be generated
 //  - params    fields to be included in the multipart result
-func Generate(body io.Writer, boundary string, params <-chan *Param) (contentType string, err error) {
+func generate(body io.Writer, boundary string, params <-chan *Param) (contentType string, err error) {
 	w := multipart.NewWriter(body)
 
 	if boundary != "" {
